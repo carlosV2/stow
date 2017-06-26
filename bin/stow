@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+STOW_DIRECTORY="${HOME}/.stow"
+SYSTEM_BINARY_DIRECTORY="/usr/local/bin"
+INSTALLATION_PATH="$(cat "${STOW_DIRECTORY}/config/stow/installation.path")"
+PACKAGES_DIRECTORY="${INSTALLATION_PATH}/packages"
+
+COMMAND="${1}"
+case "${COMMAND}" in
+  "help")
+    echo "This is the help!"
+    ;;
+
+  "search")
+    ls -1 --color=never "${INSTALLATION_PATH}}/${PACKAGES_DIRECTORY}" | grep "${2}"
+    ;;
+
+  "install")
+    PACKAGE="${2}"
+
+    if [[ ! -d "${PACKAGES_DIRECTORY}/${PACKAGE}" ]]; then
+      echo "Package \`${PACKAGE}\` not found"
+      exit
+    fi
+
+    if [[ -d "${PACKAGES_DIRECTORY}/${PACKAGE}/bin" ]]; then
+      sudo cp "${PACKAGES_DIRECTORY}/${PACKAGE}/bin/"* "${SYSTEM_BINARY_DIRECTORY}"
+    fi
+
+    if [[ -d "${PACKAGES_DIRECTORY}/${PACKAGE}/config" ]]; then
+      mkdir -p "${STOW_DIRECTORY}/config/${PACKAGE}"
+      cp "${PACKAGES_DIRECTORY}/${PACKAGE}/config/"* "${STOW_DIRECTORY}/config/${PACKAGE}"
+    fi
+
+    echo "Package \`${PACKAGE}\` has been successfully installed."
+    ;;
+
+  "config-path")
+    echo "${STOW_DIRECTORY}/config/${2}/${3}"
+    ;;
+esac
