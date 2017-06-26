@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+PHP_CONFIG_FILE="php.conf"
+HIDDEN_PHP_CONFIG_FILE=".${PHP_CONFIG_FILE}"
+
+PHP_VERSIONS=()
+DIRECTORY="$(pwd)"
+while [[ "${DIRECTORY}" != "/" ]]; do
+  if [[ -f "${DIRECTORY}/${HIDDEN_PHP_CONFIG_FILE}" ]]; then
+    while IFS= read -r VERSION; do
+      PHP_VERSIONS+=("${VERSION}")
+    done < "${DIRECTORY}/${HIDDEN_PHP_CONFIG_FILE}"
+  fi
+
+  DIRECTORY="$(dirname "${DIRECTORY}")"
+done
+
+if [[ ${#PHP_VERSIONS[@]} -eq 0 ]]; then
+  CONFIGURATION_FILE="$(stow config-path "php" "${PHP_CONFIG_FILE}")"
+  if [[ -f "${CONFIGURATION_FILE}" ]]; then
+    while IFS= read -r VERSION; do
+      PHP_VERSIONS+=("${VERSION}")
+    done < "${CONFIGURATION_FILE}"
+  fi
+fi
+
+if [[ ${#PHP_VERSIONS[@]} -eq 0 ]]; then
+  PHP_VERSIONS+=("7")
+fi
+
+PHP_VERSIONS=($(printf "%s\n" "${PHP_VERSIONS[@]}" | sort -u))
+
+for PHP_VERSION in "${PHP_VERSIONS[@]}"; do
+  sudo docker run -it --rm -u $(id -u):$(id -g) -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$(stow config-path "php" "php.ini")":/usr/local/etc/php/php.ini:ro -v $(pwd):/tmp -w /tmp php:"${PHP_VERSION}" php "${@}"
+done
